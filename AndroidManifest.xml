@@ -96,7 +96,6 @@
             android:supportsRtl="true"
             android:allowBackup="false"
             android:usesCleartextTraffic="true"
-            android:defaultToDeviceProtectedStorage="true"
             android:directBootAware="true">
 
         <!-- Settings -->
