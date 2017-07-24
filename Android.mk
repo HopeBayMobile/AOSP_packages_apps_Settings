@@ -22,6 +22,8 @@ LOCAL_STATIC_JAVA_LIBRARIES := \
     jsr305 \
     settings-logtags
 
+LOCAL_STATIC_JAVA_LIBRARIES += libteraapi
+
 LOCAL_MODULE_TAGS := optional
 
 LOCAL_SRC_FILES := \

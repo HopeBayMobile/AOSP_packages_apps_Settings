@@ -49,6 +49,8 @@ import java.util.List;
 
 import static com.android.settingslib.RestrictedLockUtils.EnforcedAdmin;
 
+import com.android.settings.teraapi.TeraService;
+
 /**
  * Confirm and execute a reset of the device to a clean "just out of the box"
  * state.  Multiple confirmations are required: first, a general "are you sure
@@ -66,11 +68,19 @@ public class MasterClear extends OptionsMenuFragment
     private static final int KEYGUARD_REQUEST = 55;
 
     static final String ERASE_EXTERNAL_EXTRA = "erase_sd";
+    static final String ERASE_TERA = "erase_tera";
 
     private View mContentView;
     private Button mInitiateButton;
     private View mExternalStorageContainer;
     private CheckBox mExternalStorage;
+
+    // Vince
+    private View mTeraCloudContainer;
+    private CheckBox mTeraCloud;
+    private View mTeraCloudDivider_1;
+    private View mTeraCloudDivider_2;
+    private TeraService mTeraService;
 
     /**
      * Keyguard validation is run using the standard {@link ConfirmLockPattern}
@@ -104,8 +114,16 @@ public class MasterClear extends OptionsMenuFragment
     private void showFinalConfirmation() {
         Bundle args = new Bundle();
         args.putBoolean(ERASE_EXTERNAL_EXTRA, mExternalStorage.isChecked());
+        args.putBoolean(ERASE_TERA, mTeraCloud.isChecked());
+
+        int titleString = 0;
+        if (mTeraService.hcfsEnabled()) {
+            titleString = R.string.tera_master_clear_confirm_title;
+        } else {
+            titleString = R.string.master_clear_confirm_title;
+        }
         ((SettingsActivity) getActivity()).startPreferencePanel(MasterClearConfirm.class.getName(),
-                args, R.string.master_clear_confirm_title, null, null, 0);
+                args, titleString, null, null, 0);
     }
 
     /**
@@ -152,6 +170,34 @@ public class MasterClear extends OptionsMenuFragment
         mInitiateButton.setOnClickListener(mInitiateListener);
         mExternalStorageContainer = mContentView.findViewById(R.id.erase_external_container);
         mExternalStorage = (CheckBox) mContentView.findViewById(R.id.erase_external);
+
+        // Vince
+        mTeraCloudContainer = mContentView.findViewById(R.id.erase_tera_cloud_container);
+        mTeraCloud = (CheckBox) mContentView.findViewById(R.id.erase_tera_cloud);
+        mTeraCloudDivider_1 = mContentView.findViewById(R.id.erase_tera_cloud_container_divider_1);
+        mTeraCloudDivider_2 = mContentView.findViewById(R.id.erase_tera_cloud_container_divider_2);
+        mTeraService = new TeraService(getActivity());
+
+        if (mTeraService.hcfsEnabled()) {
+        //if (true) { //debug only purpose
+            mInitiateButton.setText(R.string.tera_master_clear_button_text); //guo
+        } else {//guo: default button text
+                mInitiateButton.setText(R.string.master_clear_button_text); //guo
+        }
+
+        if (mTeraService.hcfsEnabled()) {
+            mTeraCloudContainer.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mTeraCloud.toggle();
+                }
+            });
+        } else {
+            mTeraCloudContainer.setVisibility(View.GONE);
+            mTeraCloudDivider_1.setVisibility(View.GONE);
+            mTeraCloudDivider_2.setVisibility(View.GONE);
+            mTeraCloud.setChecked(false);
+        }
 
         /*
          * If the external storage is emulated, it will be erased with a factory
