@@ -7886,4 +7886,50 @@
     <!-- Trigger Carrier Provisioning [CHAR LIMIT=NONE] -->
     <string name="trigger_carrier_provisioning">Trigger Carrier Provisioning</string>
 
+    <!--tera-->
+    <string name="sync_tera_cloud_title">Sync Data To Tera Cloud</string>
+    <string name="sync_tera_cloud_cancel">CANCEL</string>
+    <string name="transmission_error_title">Transmission Error</string>
+    <string name="transmission_error_message">Network connetion failed. Please try again later.</string>
+    <string name="reset_anyway">RESET ANYWAY</string>
+    <string name="master_clear_without_erase_tera_cloud_final_desc">This action will sync everything on your device to the Tera cloud, and then the device will be reset. Tap the button below to start.</string>
+    <!-- <string name="master_clear_without_erase_tera_cloud_button_text" product="default">RESET DEVICE AFTER SYNC DATA</string> -->
+    <string name="master_clear_without_erase_tera_cloud_final_button_text">Sync &amp; Reset</string>
+    <string name="tera_master_clear_button_text" product="default">Reset phone</string>
+    <string name="tera_master_clear_confirm_title">Confirm Reset</string>
+
+    <string name="erase_tera_cloud_data">Erase data on Tera cloud</string>
+    <string name="erase_tera_cloud_data_description">Erase all data from the Tera cloud</string>
+    <string name="erase_tera_clear_progress_title">Erasing Tera Cloud</string>
+    <string name="erase_tera_clear_progress_text">Please wait...</string>
+    <string name="erase_phone_clear_progress_title">Erasing Phone Storage</string>
+    <string name="erase_phone_clear_progress_text">Please wait...</string>
+    <string name="erase_tera_error_dialog_title">Error</string>
+    <string name="erase_tera_error_dialog_text">Erase error from Tera Cloud</string>
+
+    <!-- Description of tera [CHAR LIMIT=NONE] -->
+    <string name="tera_mgt_app_title">TeraTitle</string>
+    <string name="tera">Tera</string>
+    <!-- AlertDailog for sync data [CHAR LIMIT=NONE] -->
+    <string name="sync_data_stopped_title">Sync Data Stopped</string>
+    <string name="sync_data_stopped">This action cannot be executed because sync data is set to Wi-Fi only mode. Please tap "Sync Settings" to turn off Wi-Fi only or connect to available Wi-Fi network to continue.</string>
+    <string name="sync_settings">SYNC SETTINGS</string>
+    <string name="connect_to_wifi">CONNECT TO Wi-Fi</string>
+    <string name="if_sync_by_mobile_title">Use your mobile data plan to sync data?</string>
+    <string name="if_sync_by_mobile">This action may incur additional costs, depending on your mobile data plan. You can also turn on Wi-Fi in settings page.</string>
+    <string name="go_settings">SETTINGS</string>
+    <string name="continue_sync">CONTINUE</string>
+
+    <string name="hcfs_conn_status_normal">Transmission normal</string>
+    <string name="hcfs_conn_status_not_allowed">Cloud/network is disconnected</string>
+    <string name="hcfs_conn_status_failed">Transmission failed</string>
+    <string name="hcfs_conn_status_in_progress">Transmitting</string>
+    <string name="hcfs_conn_status_slow">Connection is slow</string>
+
+    <string name="tera_sync_complete_title">Sync complete</string>
+    <string name="tera_sync_complete_desc">Touch to complete the factory reset.</string>
+
+    <string name="unable_to_sync_data_to_cloud_dialog_title">Unable To Reset</string>
+    <string name="unable_sync_data_to_cloud_when_boosting_dialog_message">Reset is prohibited while Tera is boosting. Please try again later.</string>
+    <string name="unable_sync_data_to_cloud_when_unboosting_dialog_message">Reset is prohibited while Tera is unboosting. Please try again later.</string>
 </resources>

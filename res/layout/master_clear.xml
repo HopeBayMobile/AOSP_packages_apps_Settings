@@ -44,6 +44,52 @@
                 android:visibility="gone"
                 android:textSize="18sp"
                 android:text="@string/master_clear_desc_also_erases_external" />
+
+    <View android:id="@+id/erase_tera_cloud_container_divider_1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/listDivider" />
+
+            <!-- Vince -->
+            <LinearLayout android:id="@+id/erase_tera_cloud_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="12dp"
+                android:orientation="horizontal"
+                android:focusable="true"
+                android:clickable="true">
+                <CheckBox android:id="@+id/erase_tera_cloud"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:paddingEnd="8dp"
+                    android:focusable="false"
+                    android:clickable="false"
+                    android:duplicateParentState="true" />
+                <LinearLayout android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="12dp"
+                        android:textSize="18sp"
+                        android:text="@string/erase_tera_cloud_data" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="4sp"
+                        android:textSize="14sp"
+                        android:text="@string/erase_tera_cloud_data_description" />
+                </LinearLayout>
+            </LinearLayout>
+
+    <View android:id="@+id/erase_tera_cloud_container_divider_2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/listDivider" />
+
             <TextView android:id="@+id/accounts_label"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
