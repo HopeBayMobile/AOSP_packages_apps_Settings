@@ -84,7 +84,7 @@ public class StorageVolumePreference extends Preference {
         }
 
         if (volume.isMountedReadable()) {
-            if (volume.getType() == VolumeInfo.TYPE_HCFS) {
+            if (volume.getType() == 100) {
                 SharedPreferences sharedPreferences =
                         PreferenceManager.getDefaultSharedPreferences(context);
                 long teraTotalSize = sharedPreferences.getLong(StorageSettings.TERA_TOTAL_SIZE, 0);
@@ -173,7 +173,7 @@ public class StorageVolumePreference extends Preference {
             progress.setVisibility(View.VISIBLE);
             progress.setProgress(mUsedPercent);
             progress.setProgressTintList(ColorStateList.valueOf(mColor));
-        } else if (mVolume.getType() == VolumeInfo.TYPE_HCFS && mUsedPercent != -1) {
+        } else if (mVolume.getType() == 100 && mUsedPercent != -1) {
             progress.setVisibility(View.VISIBLE);
             progress.setProgress(mUsedPercent);
             progress.setProgressTintList(ColorStateList.valueOf(mColor));

@@ -205,8 +205,7 @@ public class StorageSettings extends SettingsPreferenceFragment implements Index
         }
 
         if (mStorageTera.hcfsEnabled()) {
-            final VolumeInfo hcfs = new VolumeInfo(VolumeInfo.ID_HCFS,
-                    VolumeInfo.TYPE_HCFS, null, null);
+            final VolumeInfo hcfs = new VolumeInfo("hcfs", 100, null, null);
             hcfs.state = VolumeInfo.STATE_MOUNTED;
             hcfs.path = "/data";
             hcfs.fsLabel = "Tera cloud storage";
