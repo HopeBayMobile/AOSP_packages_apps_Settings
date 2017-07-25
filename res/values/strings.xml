@@ -7932,4 +7932,7 @@
     <string name="unable_to_sync_data_to_cloud_dialog_title">Unable To Reset</string>
     <string name="unable_sync_data_to_cloud_when_boosting_dialog_message">Reset is prohibited while Tera is boosting. Please try again later.</string>
     <string name="unable_sync_data_to_cloud_when_unboosting_dialog_message">Reset is prohibited while Tera is unboosting. Please try again later.</string>
+
+    <!-- Section header above list of internal storage devices [CHAR LIMIT=30]-->
+    <string name="storage_cloud_title">Tera storage</string>
 </resources>

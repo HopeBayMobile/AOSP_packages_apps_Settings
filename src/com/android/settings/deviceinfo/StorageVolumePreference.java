@@ -18,10 +18,13 @@ package com.android.settings.deviceinfo;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.os.Handler;
 import android.os.storage.StorageManager;
 import android.os.storage.VolumeInfo;
+import android.preference.PreferenceManager;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceViewHolder;
 import android.text.format.Formatter;
@@ -29,9 +32,11 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.text.format.Formatter.BytesResult;
 
 import com.android.settings.R;
 import com.android.settings.deviceinfo.StorageSettings.UnmountTask;
+import com.android.settings.deviceinfo.StorageSettings;
 
 import java.io.File;
 
@@ -46,9 +51,18 @@ public class StorageVolumePreference extends Preference {
     private int mColor;
     private int mUsedPercent = -1;
 
+    private StorageTera mStorageTera;
+    private final Context mContext;
+    private Handler mUIHandler;
+    private PreferenceViewHolder mView;
+
     // TODO: ideally, VolumeInfo should have a total physical size.
     public StorageVolumePreference(Context context, VolumeInfo volume, int color, long totalBytes) {
         super(context);
+
+        mContext = context;
+        mStorageTera =  new StorageTera();
+        mUIHandler = new Handler();
 
         mStorageManager = context.getSystemService(StorageManager.class);
         mVolume = volume;
@@ -62,31 +76,59 @@ public class StorageVolumePreference extends Preference {
         Drawable icon;
         if (VolumeInfo.ID_PRIVATE_INTERNAL.equals(volume.getId())) {
             icon = context.getDrawable(R.drawable.ic_settings_storage);
+        } else if (volume.getId().equals("hcfs")) {
+            icon = context.getDrawable(R.drawable.ic_settings_cloud_storage);
+            setTitle(R.string.storage_cloud_title);
         } else {
             icon = context.getDrawable(R.drawable.ic_sim_sd);
         }
 
         if (volume.isMountedReadable()) {
-            // TODO: move statfs() to background thread
-            final File path = volume.getPath();
-            if (totalBytes <= 0) {
-                totalBytes = path.getTotalSpace();
-            }
-            final long freeBytes = path.getFreeSpace();
-            final long usedBytes = totalBytes - freeBytes;
+            if (volume.getType() == 100) {
+                SharedPreferences sharedPreferences =
+                        PreferenceManager.getDefaultSharedPreferences(context);
+                long teraTotalSize = sharedPreferences.getLong(StorageSettings.TERA_TOTAL_SIZE, 0);
+                long teraUsedSize = sharedPreferences.getLong(StorageSettings.TERA_USED_SIZE, 0);
+                if (teraUsedSize == 0 && teraTotalSize == 0) {
+                    setSummary(R.string.memory_calculating_size);
+                    mUsedPercent = 0;
+                } else {
+                    updateCloudSummary(teraTotalSize, teraUsedSize);
+                }
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        final long teraTotalBytes = mStorageTera.getTeraTotalSpace();
+                        final long teraUsedBytes = teraTotalBytes - mStorageTera.getTeraFreeSpace();
+                        mUIHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                updateCloudSummary(teraTotalBytes, teraUsedBytes);
+                            }
+                        });
+                    }
+                }).start();
+            } else {
+                // TODO: move statfs() to background thread
+                final File path = volume.getPath();
+                if (totalBytes <= 0) {
+                    totalBytes = path.getTotalSpace();
+                }
+                final long freeBytes = path.getFreeSpace();
+                final long usedBytes = totalBytes - freeBytes;
 
-            final String used = Formatter.formatFileSize(context, usedBytes);
-            final String total = Formatter.formatFileSize(context, totalBytes);
-            setSummary(context.getString(R.string.storage_volume_summary, used, total));
-            if (totalBytes > 0) {
-                mUsedPercent = (int) ((usedBytes * 100) / totalBytes);
-            }
+                final String used = Formatter.formatFileSize(context, usedBytes);
+                final String total = Formatter.formatFileSize(context, totalBytes);
+                setSummary(context.getString(R.string.storage_volume_summary, used, total));
+                if (totalBytes > 0) {
+                    mUsedPercent = (int) ((usedBytes * 100) / totalBytes);
+                }
 
-            if (freeBytes < mStorageManager.getStorageLowBytes(path)) {
-                mColor = StorageSettings.COLOR_WARNING;
-                icon = context.getDrawable(R.drawable.ic_warning_24dp);
+                if (freeBytes < mStorageManager.getStorageLowBytes(path)) {
+                    mColor = StorageSettings.COLOR_WARNING;
+                    icon = context.getDrawable(R.drawable.ic_warning_24dp);
+                }
             }
-
         } else {
             setSummary(volume.getStateDescription());
             mUsedPercent = -1;
@@ -102,9 +144,25 @@ public class StorageVolumePreference extends Preference {
         }
     }
 
+    public void updateCloudSummary(long teraTotalBytes, long teraUsedBytes) {
+        BytesResult tera_result = mStorageTera.convertByteToProperUnit(teraUsedBytes);
+        final String used = tera_result.value + " " + tera_result.units;
+        tera_result = mStorageTera.convertByteToProperUnit(teraTotalBytes);
+        final String total = tera_result.value + " " + tera_result.units;
+        setSummary(mContext.getString(R.string.storage_volume_summary, used, total));
+        mUsedPercent = (int) ((teraUsedBytes * 100) / teraTotalBytes);
+        if (mView != null) {
+            final ProgressBar progress = (ProgressBar) mView.findViewById(android.R.id.progress);
+            progress.setVisibility(View.VISIBLE);
+            progress.setProgress(mUsedPercent);
+            progress.setProgressTintList(ColorStateList.valueOf(mColor));
+        }
+    }
+
     @Override
     public void onBindViewHolder(PreferenceViewHolder view) {
         final ImageView unmount = (ImageView) view.findViewById(R.id.unmount);
+        mView = view;
         if (unmount != null) {
             unmount.setImageTintList(ColorStateList.valueOf(Color.parseColor("#8a000000")));
             unmount.setOnClickListener(mUnmountListener);
@@ -112,6 +170,10 @@ public class StorageVolumePreference extends Preference {
 
         final ProgressBar progress = (ProgressBar) view.findViewById(android.R.id.progress);
         if (mVolume.getType() == VolumeInfo.TYPE_PRIVATE && mUsedPercent != -1) {
+            progress.setVisibility(View.VISIBLE);
+            progress.setProgress(mUsedPercent);
+            progress.setProgressTintList(ColorStateList.valueOf(mColor));
+        } else if (mVolume.getType() == 100 && mUsedPercent != -1) {
             progress.setVisibility(View.VISIBLE);
             progress.setProgress(mUsedPercent);
             progress.setProgressTintList(ColorStateList.valueOf(mColor));

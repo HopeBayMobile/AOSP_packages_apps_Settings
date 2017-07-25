@@ -141,6 +141,8 @@ import java.util.Set;
 
 // Vince
 import com.android.settings.teraapi.TeraService;
+// Daniel
+import com.android.settings.deviceinfo.StorageTera;
 
 public class SettingsActivity extends SettingsDrawerActivity
         implements PreferenceManager.OnPreferenceTreeClickListener,
@@ -236,6 +238,8 @@ public class SettingsActivity extends SettingsDrawerActivity
 
     // Vince
     private TeraService mTeraService;
+    // Daniel
+    private StorageTera mStorageTera;
 
     // Show only these settings for restricted users
     private String[] SETTINGS_FOR_RESTRICTED = {
@@ -528,9 +532,12 @@ public class SettingsActivity extends SettingsDrawerActivity
     @Override
     protected void onCreate(Bundle savedState) {
         super.onCreate(savedState);
+
         final Context context = getApplicationContext();
         // Vince
         mTeraService = new TeraService(context);
+        // Daniel
+        mStorageTera = new StorageTera(context);
 
         long startTime = System.currentTimeMillis();
 
@@ -856,6 +863,8 @@ public class SettingsActivity extends SettingsDrawerActivity
 
         // Vince
         mTeraService.unbind();
+        // Daniel
+        mStorageTera.unbind();
 
         mDevelopmentPreferences.unregisterOnSharedPreferenceChangeListener(
                 mDevelopmentPreferencesListener);

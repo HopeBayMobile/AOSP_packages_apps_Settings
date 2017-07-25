@@ -24,10 +24,12 @@ import android.app.Fragment;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.os.storage.DiskInfo;
@@ -35,6 +37,7 @@ import android.os.storage.StorageEventListener;
 import android.os.storage.StorageManager;
 import android.os.storage.VolumeInfo;
 import android.os.storage.VolumeRecord;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceCategory;
@@ -75,6 +78,9 @@ public class StorageSettings extends SettingsPreferenceFragment implements Index
     private static final String TAG_VOLUME_UNMOUNTED = "volume_unmounted";
     private static final String TAG_DISK_INIT = "disk_init";
 
+    public static final String TERA_TOTAL_SIZE = "tera_total_size";
+    public static final String TERA_USED_SIZE = "tera_used_size";
+
     static final int COLOR_PUBLIC = Color.parseColor("#ff9e9e9e");
     static final int COLOR_WARNING = Color.parseColor("#fff4511e");
 
@@ -90,9 +96,14 @@ public class StorageSettings extends SettingsPreferenceFragment implements Index
 
     private PreferenceCategory mInternalCategory;
     private PreferenceCategory mExternalCategory;
+    private PreferenceCategory mCloudCategory;
 
     private StorageSummaryPreference mInternalSummary;
+    private StorageSummaryPreference mCloudSummary;
     private static long sTotalInternalStorage;
+
+    private StorageTera mStorageTera;
+    private Handler mUIHandler;
 
     @Override
     protected int getMetricsCategory() {
@@ -109,6 +120,7 @@ public class StorageSettings extends SettingsPreferenceFragment implements Index
         super.onCreate(icicle);
 
         final Context context = getActivity();
+        mUIHandler = new Handler();
 
         mStorageManager = context.getSystemService(StorageManager.class);
         mStorageManager.registerListener(mStorageListener);
@@ -121,8 +133,10 @@ public class StorageSettings extends SettingsPreferenceFragment implements Index
 
         mInternalCategory = (PreferenceCategory) findPreference("storage_internal");
         mExternalCategory = (PreferenceCategory) findPreference("storage_external");
+        mCloudCategory = (PreferenceCategory) findPreference("storage_cloud");
 
         mInternalSummary = new StorageSummaryPreference(getPrefContext());
+        mCloudSummary = new StorageSummaryPreference(getPrefContext());
 
         setHasOptionsMenu(true);
     }
@@ -157,10 +171,15 @@ public class StorageSettings extends SettingsPreferenceFragment implements Index
         getPreferenceScreen().removeAll();
         mInternalCategory.removeAll();
         mExternalCategory.removeAll();
+        mCloudCategory.removeAll();
 
         mInternalCategory.addPreference(mInternalSummary);
+        if (mStorageTera.hcfsEnabled()) {
+            mCloudCategory.addPreference(mCloudSummary);
+        }
 
         int privateCount = 0;
+        int cloudCount = 0;
         long privateUsedBytes = 0;
         long privateTotalBytes = 0;
 
@@ -183,6 +202,17 @@ public class StorageSettings extends SettingsPreferenceFragment implements Index
                 mExternalCategory.addPreference(
                         new StorageVolumePreference(context, vol, COLOR_PUBLIC, 0));
             }
+        }
+
+        if (mStorageTera.hcfsEnabled()) {
+            final VolumeInfo hcfs = new VolumeInfo("hcfs", 100, null, null);
+            hcfs.state = VolumeInfo.STATE_MOUNTED;
+            hcfs.path = "/data";
+            hcfs.fsLabel = "Tera cloud storage";
+
+            final int color = COLOR_PRIVATE[cloudCount++ % COLOR_PRIVATE.length];
+            mCloudCategory.addPreference(
+                    new StorageVolumePreference(context, hcfs, color, 0));
         }
 
         // Show missing private volumes
@@ -222,6 +252,40 @@ public class StorageSettings extends SettingsPreferenceFragment implements Index
                 result.value, result.units));
         mInternalSummary.setSummary(getString(R.string.storage_volume_used_total,
                 Formatter.formatFileSize(context, privateTotalBytes)));
+
+        if (mStorageTera.hcfsEnabled()) {
+            SharedPreferences sharedPreferences =
+                PreferenceManager.getDefaultSharedPreferences(context);
+            long teraTotalSize = sharedPreferences.getLong(TERA_TOTAL_SIZE, 0);
+            long teraUsedSize = sharedPreferences.getLong(TERA_USED_SIZE, 0);
+            if (teraUsedSize == 0 && teraTotalSize == 0) {
+                mCloudSummary.setTitle(R.string.memory_calculating_size);
+                mCloudSummary.setSummary("");
+            } else {
+                updateCloudSummary(teraTotalSize, teraUsedSize);
+            }
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    final long teraTotalBytes = mStorageTera.getTeraTotalSpace();
+                    final long teraUsedBytes = teraTotalBytes - mStorageTera.getTeraFreeSpace();
+                    mUIHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                updateCloudSummary(teraTotalBytes, teraUsedBytes);
+                            } catch (Exception e) {
+                                Log.i(TAG, "update cloud summary failed");
+                            }
+                        }
+                    });
+                }
+            }).start();
+        }
+
+        if (mCloudCategory.getPreferenceCount() > 0) {
+            getPreferenceScreen().addPreference(mCloudCategory);
+        }
         if (mInternalCategory.getPreferenceCount() > 0) {
             getPreferenceScreen().addPreference(mInternalCategory);
         }
@@ -230,7 +294,8 @@ public class StorageSettings extends SettingsPreferenceFragment implements Index
         }
 
         if (mInternalCategory.getPreferenceCount() == 2
-                && mExternalCategory.getPreferenceCount() == 0) {
+                && mExternalCategory.getPreferenceCount() == 0
+                && mCloudCategory.getPreferenceCount() == 0) {
             // Only showing primary internal storage, so just shortcut
             final Bundle args = new Bundle();
             args.putString(VolumeInfo.EXTRA_VOLUME_ID, VolumeInfo.ID_PRIVATE_INTERNAL);
@@ -244,11 +309,34 @@ public class StorageSettings extends SettingsPreferenceFragment implements Index
         }
     }
 
+    public void updateCloudSummary(long teraTotalBytes, long teraUsedBytes) {
+        // Save to sharepreference
+        SharedPreferences sharedPreferences =
+            PreferenceManager.getDefaultSharedPreferences(getPrefContext());
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putLong(TERA_TOTAL_SIZE, teraTotalBytes);
+        editor.putLong(TERA_USED_SIZE, teraUsedBytes);
+        editor.apply();
+
+        BytesResult tera_result = mStorageTera.convertByteToProperUnit(teraUsedBytes);
+        mCloudSummary.setTitle(TextUtils.expandTemplate(getText(R.string.storage_size_large),
+                tera_result.value, tera_result.units));
+        tera_result = mStorageTera.convertByteToProperUnit(teraTotalBytes);
+        String size = tera_result.value + " " + tera_result.units;
+        mCloudSummary.setSummary(getString(R.string.storage_volume_used_total, size));
+    }
+
     @Override
     public void onResume() {
         super.onResume();
         mStorageManager.registerListener(mStorageListener);
+        mStorageTera =  new StorageTera(getPrefContext());
         refresh();
+    }
+
+    interface getAPIServiceCallback {
+        public void onAPIServiceConnected();
+        public void onGetHCFSStatReturn(String input);
     }
 
     @Override
@@ -277,12 +365,15 @@ public class StorageSettings extends SettingsPreferenceFragment implements Index
             }
 
             if (vol.getType() == VolumeInfo.TYPE_PRIVATE) {
-                final Bundle args = new Bundle();
-                args.putString(VolumeInfo.EXTRA_VOLUME_ID, vol.getId());
-                PrivateVolumeSettings.setVolumeSize(args, PrivateStorageInfo.getTotalSize(vol,
-                        sTotalInternalStorage));
-                startFragment(this, PrivateVolumeSettings.class.getCanonicalName(),
-                        -1, 0, args);
+                Log.d(TAG,"cloud category count: " + String.valueOf(mCloudCategory.getPreferenceCount()));
+                if (mCloudCategory.getPreferenceCount() == 0) {
+                    final Bundle args = new Bundle();
+                    args.putString(VolumeInfo.EXTRA_VOLUME_ID, vol.getId());
+                    PrivateVolumeSettings.setVolumeSize(args, PrivateStorageInfo.getTotalSize(vol,
+                                sTotalInternalStorage));
+                    startFragment(this, PrivateVolumeSettings.class.getCanonicalName(),
+                            -1, 0, args);
+                }
                 return true;
 
             } else if (vol.getType() == VolumeInfo.TYPE_PUBLIC) {
