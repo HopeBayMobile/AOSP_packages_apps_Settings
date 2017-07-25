@@ -3090,5 +3090,24 @@
             android:enabled="@bool/config_has_help" />
 
         <!-- This is the longest AndroidManifest.xml ever. -->
+
+        <!--Vince-->
+        <receiver android:name=".tera.TeraReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="hbt.intent.action.UPLOAD_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <activity android:name=".tera.ShowFinalConfirm"
+                android:label="ShowFinalConfirm"
+                android:launchMode="singleTask"
+                android:taskAffinity="com.android.settings">
+            <intent-filter>
+                <action android:name="android.settings.tera.ShowFinalConfirm" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
     </application>
 </manifest>

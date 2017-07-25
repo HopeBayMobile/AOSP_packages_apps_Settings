@@ -139,6 +139,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+// Vince
+import com.android.settings.teraapi.TeraService;
+
 public class SettingsActivity extends SettingsDrawerActivity
         implements PreferenceManager.OnPreferenceTreeClickListener,
         PreferenceFragment.OnPreferenceStartFragmentCallback,
@@ -230,6 +233,9 @@ public class SettingsActivity extends SettingsDrawerActivity
 
     private CharSequence mInitialTitle;
     private int mInitialTitleResId;
+
+    // Vince
+    private TeraService mTeraService;
 
     // Show only these settings for restricted users
     private String[] SETTINGS_FOR_RESTRICTED = {
@@ -522,6 +528,10 @@ public class SettingsActivity extends SettingsDrawerActivity
     @Override
     protected void onCreate(Bundle savedState) {
         super.onCreate(savedState);
+        final Context context = getApplicationContext();
+        // Vince
+        mTeraService = new TeraService(context);
+
         long startTime = System.currentTimeMillis();
 
         // Should happen before any call to getIntent()
@@ -843,6 +853,9 @@ public class SettingsActivity extends SettingsDrawerActivity
     @Override
     public void onDestroy() {
         super.onDestroy();
+
+        // Vince
+        mTeraService.unbind();
 
         mDevelopmentPreferences.unregisterOnSharedPreferenceChangeListener(
                 mDevelopmentPreferencesListener);
