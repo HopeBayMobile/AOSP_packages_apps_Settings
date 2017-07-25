@@ -7886,4 +7886,6 @@
     <!-- Trigger Carrier Provisioning [CHAR LIMIT=NONE] -->
     <string name="trigger_carrier_provisioning">Trigger Carrier Provisioning</string>
 
+    <!-- Section header above list of internal storage devices [CHAR LIMIT=30]-->
+    <string name="storage_cloud_title">Tera storage</string>
 </resources>

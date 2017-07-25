@@ -21,6 +21,10 @@
     settings:keywords="@string/keywords_storage">
 
     <PreferenceCategory
+        android:key="storage_cloud"
+        android:title="@string/storage_cloud_title" />
+
+    <PreferenceCategory
         android:key="storage_internal"
         android:title="@string/storage_internal_title" />
 
