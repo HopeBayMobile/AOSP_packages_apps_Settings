@@ -187,7 +187,7 @@ public class MasterClearConfirm extends OptionsMenuFragment {
             }
 
             //android default factory reset
-            if(!mTeraService.hcfsEnabled()) {
+            if(!mTeraService.hcfsEnabled() || isGoogleDriveBackend()) {
                 eraseData();
                 return;
             }
@@ -396,7 +396,7 @@ public class MasterClearConfirm extends OptionsMenuFragment {
     }
 
     private boolean ifNeedSyncDataToCloud(){
-        return mTeraService.hcfsEnabled() && (!mEraseTera);
+        return mTeraService.hcfsEnabled() && (!mEraseTera) && !isGoogleDriveBackend();
         //return true && (!mTeraCloud.isChecked());//debug onlu purpose
     }
 
@@ -776,4 +776,9 @@ public class MasterClearConfirm extends OptionsMenuFragment {
         // The directory is now empty so delete it
         return dir.delete();
     }// end deleteDir()
+
+    private boolean isGoogleDriveBackend() {
+        return Settings.Global.getInt(
+                getActivity().getContentResolver(), "mAuthStateKey", 0) != 0;
+    }
 }
