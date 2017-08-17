@@ -187,8 +187,13 @@ public class MasterClearConfirm extends OptionsMenuFragment {
             }
 
             //android default factory reset
-            if(!mTeraService.hcfsEnabled() || isGoogleDriveBackend()) {
+            if(!mTeraService.hcfsEnabled()) {
                 eraseData();
+                return;
+            }
+
+            if(!isNetworkConnect(false)){
+                gotoWifiSettings();
                 return;
             }
 
@@ -199,18 +204,10 @@ public class MasterClearConfirm extends OptionsMenuFragment {
                     return;
                 }
 
-                boolean isWifiOnly = mTeraService.isWifiOnly();
-                int networkType = getNetworkType();
-
-                if(!isNetworkConnect(false)){
-                    gotoWifiSettings();
-                    return;
-                }
-
-                if (networkType == ConnectivityManager.TYPE_WIFI) {
+                if (ConnectivityManager.TYPE_WIFI == getNetworkType()) {
                     syncDataToCloud();
                 } else {
-                    if (isWifiOnly) {
+                    if (mTeraService.isWifiOnly()) {
                         wifiOnlyDialog();
                     } else {//not wifi only
                         ifSyncByMobileDialog();
@@ -218,10 +215,6 @@ public class MasterClearConfirm extends OptionsMenuFragment {
                     return;
                 }
             } else { // mEraseTera == true
-                if(!isNetworkConnect(false)){
-                    gotoWifiSettings();
-                    return;
-                }
                 setMgmtServerFlag();
             }
         }
@@ -396,7 +389,7 @@ public class MasterClearConfirm extends OptionsMenuFragment {
     }
 
     private boolean ifNeedSyncDataToCloud(){
-        return mTeraService.hcfsEnabled() && (!mEraseTera) && !isGoogleDriveBackend();
+        return mTeraService.hcfsEnabled() && (!mEraseTera);
         //return true && (!mTeraCloud.isChecked());//debug onlu purpose
     }
 
@@ -459,15 +452,15 @@ public class MasterClearConfirm extends OptionsMenuFragment {
 
     private void setMgmtServerFlag(){
         if (mEraseTera) {
-            mProgressDialog = getProgressDialog(
-                getActivity().getString(R.string.erase_tera_clear_progress_title),
-                getActivity().getString(R.string.erase_tera_clear_progress_text));
+            showProgressDialog(STATUS_ERASE_TERA);
         } else {
-            mProgressDialog = getProgressDialog(
-                getActivity().getString(R.string.erase_phone_clear_progress_title),
-                getActivity().getString(R.string.erase_phone_clear_progress_text));
+            showProgressDialog(STATUS_ERASE_PHONE);
         }
-        mProgressDialog.show();
+
+        if (isGoogleDriveBackend()) {
+            eraseData();
+            return;
+        }
 
         mTeraService.setJWTandIMEIListener(new IGetJWTandIMEIListener.Stub(){
             @Override
@@ -575,10 +568,7 @@ public class MasterClearConfirm extends OptionsMenuFragment {
 
                 @Override
                 protected void onPreExecute() {
-                    mProgressDialog = getProgressDialog(
-                        getActivity().getString(R.string.master_clear_progress_title),
-                        getActivity().getString(R.string.master_clear_progress_text));
-                    mProgressDialog.show();
+                    showProgressDialog(STATUS_ERASING);
 
                     // need to prevent orientation changes as we're about to go into
                     // a long IO request, so we won't be able to access inflate resources on flash
@@ -609,13 +599,32 @@ public class MasterClearConfirm extends OptionsMenuFragment {
         builder.show();
     }
 
-    private ProgressDialog getProgressDialog(String title, String msg) {
-        final ProgressDialog progressDialog = new ProgressDialog(getActivity());
-        progressDialog.setIndeterminate(true);
-        progressDialog.setCancelable(false);
-        progressDialog.setTitle(title);
-        progressDialog.setMessage(msg);
-        return progressDialog;
+    private final static int STATUS_ERASE_PHONE = 0;
+    private final static int STATUS_ERASE_TERA = 1;
+    private final static int STATUS_ERASING = 2;
+
+    private void showProgressDialog(int status) {
+        mProgressDialog = new ProgressDialog(getActivity());
+        mProgressDialog.setIndeterminate(true);
+        mProgressDialog.setCancelable(false);
+        switch (status) {
+            case STATUS_ERASE_PHONE:
+                mProgressDialog.setTitle(R.string.erase_phone_clear_progress_title);
+                mProgressDialog.setMessage(
+                        getActivity().getString(R.string.erase_tera_clear_progress_text));
+                break;
+            case STATUS_ERASE_TERA:
+                mProgressDialog.setTitle(R.string.erase_tera_clear_progress_title);
+                mProgressDialog.setMessage(
+                        getActivity().getString(R.string.erase_phone_clear_progress_text));
+                break;
+            case STATUS_ERASING:
+                mProgressDialog.setTitle(R.string.master_clear_progress_title);
+                mProgressDialog.setMessage(
+                        getActivity().getString(R.string.master_clear_progress_text));
+                break;
+        }
+        mProgressDialog.show();
     }
 
     private void setBooleanSharedPreference(String key, boolean value){

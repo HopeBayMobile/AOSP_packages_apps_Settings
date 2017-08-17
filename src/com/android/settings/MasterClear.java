@@ -179,13 +179,8 @@ public class MasterClear extends OptionsMenuFragment
         mTeraService = new TeraService(getActivity());
 
         if (mTeraService.hcfsEnabled()) {
-        //if (true) { //debug only purpose
             mInitiateButton.setText(R.string.tera_master_clear_button_text); //guo
-        } else {//guo: default button text
-                mInitiateButton.setText(R.string.master_clear_button_text); //guo
-        }
 
-        if (mTeraService.hcfsEnabled()) {
             mTeraCloudContainer.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -193,6 +188,8 @@ public class MasterClear extends OptionsMenuFragment
                 }
             });
         } else {
+            mInitiateButton.setText(R.string.master_clear_button_text); //guo
+
             mTeraCloudContainer.setVisibility(View.GONE);
             mTeraCloudDivider_1.setVisibility(View.GONE);
             mTeraCloudDivider_2.setVisibility(View.GONE);
