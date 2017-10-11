@@ -84,7 +84,6 @@ public class MasterClearConfirm extends OptionsMenuFragment {
     private boolean mEraseTera;
     private final String CACHE_BACKUP_DIR = "/cache/backup";
     private final String DOMAIN_NAME = "terafonnreg.hopebaytech.com";
-    private final String DEVICE_API = "https://" + DOMAIN_NAME + "/api/user/v1/devices/";
     private final String TAG = "MasterClearConfirm";
     private final String eraseFlagPath = "/data/eraseFlag";
 
@@ -168,7 +167,7 @@ public class MasterClearConfirm extends OptionsMenuFragment {
             if(action.equals(TeraService.ACTION_UPLOAD_COMPLETED)){ // Tera app send out this broadcast
                 stopSyncAllDataAndRemoveProgressDialog(false);
                 Log.d(TAG,"receive data sync intent");
-                setMgmtServerFlag();
+                eraseData();
             }
         }
     };
@@ -215,7 +214,7 @@ public class MasterClearConfirm extends OptionsMenuFragment {
                     return;
                 }
             } else { // mEraseTera == true
-                setMgmtServerFlag();
+                eraseData();
             }
         }
 
@@ -450,54 +449,6 @@ public class MasterClearConfirm extends OptionsMenuFragment {
         mCheckThread.start();
     }
 
-    private void setMgmtServerFlag(){
-        if (mEraseTera) {
-            showProgressDialog(STATUS_ERASE_TERA);
-        } else {
-            showProgressDialog(STATUS_ERASE_PHONE);
-        }
-
-        if (isGoogleDriveBackend()) {
-            eraseData();
-            return;
-        }
-
-        mTeraService.setJWTandIMEIListener(new IGetJWTandIMEIListener.Stub(){
-            @Override
-            public void onDataGet(final String imei, final String jwt) throws RemoteException {
-                try {
-                    Log.i(TAG, "imei: " + imei + " JWT: " + jwt);
-
-                    new Thread(new Runnable(){
-                        @Override
-                        public void run() {
-                            try {
-                                if (imei == "" || jwt == "") {
-                                    mHandler.sendEmptyMessage(500);
-                                } else {
-                                    int responseCode = 500;
-                                    String url = DEVICE_API + imei;
-                                    url += (mEraseTera ? "/close/" : "/tx_ready/");
-                                    Log.i(TAG, "url = " + url);
-                                    responseCode = closeDeviceService(url, jwt);
-                                    //Log.i(TAG, "responseCode: " + String.valueOf(responseCode));
-                                    mHandler.sendEmptyMessage(responseCode);
-                                }
-                                //Thread.sleep(100);
-                            } catch(Exception e){
-                                e.printStackTrace();
-                            }
-                        }
-                    }).start();
-
-                } catch (Exception e) {
-                    Log.e(TAG, e.toString());
-                }
-            }//end onDataGet()
-        });
-        mTeraService.getJWTandIMEI();
-    }//end setMgmtServerFlag()
-
     private int closeDeviceService(String urlString, String jwt) {
         HttpURLConnection connection = null;
         int responseCode = 500;
@@ -673,7 +624,7 @@ public class MasterClearConfirm extends OptionsMenuFragment {
             mTeraService.stopUploadTeraData();
             syncDataErrorDialog();
          } else if(syncRes == 1){ // no dirty data to sync
-            setMgmtServerFlag();
+            eraseData();
          } else{ // sync dirty data: syncRes == 0
             startToSyncAllData();
          }
@@ -687,7 +638,7 @@ public class MasterClearConfirm extends OptionsMenuFragment {
             .setNegativeButton(R.string.reset_anyway, new DialogInterface.OnClickListener(){
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    setMgmtServerFlag();
+                    eraseData();
                 }//end onClick()
             })
             .show();
